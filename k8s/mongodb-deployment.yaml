@@ -1,0 +1,84 @@
+# ConfigMap for MongoDB Initialization Script
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mongodb-init-script
+data:
+  init-mongo.js: |
+    db = db.getSiblingDB("DurHack");   // Switch to the DurHack database
+    db.createCollection("stocks");     // Create the stocks collection
+
+
+---
+# ConfigMap to Store MongoDB Credentials
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mongodb-config
+data:
+  MONGO_INITDB_ROOT_USERNAME: "user"
+  MONGO_INITDB_ROOT_PASSWORD: "password"
+
+---
+# Persistent Volume Claim for MongoDB Data Persistence
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mongodb-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+# MongoDB Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongodb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongodb
+  template:
+    metadata:
+      labels:
+        app: mongodb
+    spec:
+      containers:
+      - name: mongodb
+        image: mongo:6.0  # Specify MongoDB image version
+        ports:
+        - containerPort: 27017
+        envFrom:
+        - configMapRef:
+            name: mongodb-config
+        volumeMounts:
+        - name: mongodb-data
+          mountPath: /data/db
+        - name: init-script-volume
+          mountPath: /docker-entrypoint-initdb.d/init-mongo.js
+          subPath: init-mongo.js  # Map script as a file in the initdb.d directory
+    volumes:
+      - name: mongodb-data
+        persistentVolumeClaim:
+          claimName: mongodb-pvc
+      - name: init-script-volume
+        configMap:
+          name: mongodb-init-script
+
+---
+# Service to Expose MongoDB
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongodb-service
+spec:
+  ports:
+    - port: 27017
+  selector:
+    app: mongodb
+  type: ClusterIP

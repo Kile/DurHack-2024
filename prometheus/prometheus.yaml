@@ -1,0 +1,4 @@
+scrape_configs:
+  - job_name: "DurHack"
+    static_configs:
+      - targets: ["api-facade-service:8080"]

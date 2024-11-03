@@ -1,0 +1,13 @@
+# ConfigMap to hold the SQL initialization script
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init-script
+data:
+  init.sql: |
+    CREATE TABLE IF NOT EXISTS stock_data (
+        id SERIAL PRIMARY KEY,
+        stock_name VARCHAR(255) NOT NULL,
+        price DECIMAL(10, 2) NOT NULL,
+        date_time VARCHAR(255) NOT NULL
+    );
